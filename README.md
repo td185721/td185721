@@ -23,6 +23,10 @@ analysis, and small reverse engineering tools.
   extractor. Recovers class hierarchies from stripped Windows binaries
   by walking the on-disk Complete Object Locator → Class Hierarchy
   Descriptor → Base Class Array chain.
+- **[vtable-dump](https://github.com/td185721/vtable-dump)** — companion
+  to rtti-dump. Locates class virtual function tables by scanning for
+  Complete Object Locator back-references, then enumerates the function
+  pointer slots in each vtable.
 
 ### Tooling
 

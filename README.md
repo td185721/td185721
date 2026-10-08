@@ -27,6 +27,10 @@ analysis, and small reverse engineering tools.
   to rtti-dump. Locates class virtual function tables by scanning for
   Complete Object Locator back-references, then enumerates the function
   pointer slots in each vtable.
+- **[pe-diff](https://github.com/td185721/pe-diff)** — structural diff
+  for Portable Executable files. Compares headers, sections, imports,
+  and exports between two binaries; useful for patch comparison and
+  version drift analysis.
 
 ### Tooling
 

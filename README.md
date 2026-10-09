@@ -1,14 +1,30 @@
 <p align="center">
-  <img src="assets/banner.svg" width="100%" alt="td185721: systems programming and binary analysis in Rust, C++, C and Python">
+  <img src="assets/banner.svg" width="100%" alt="td185721: Windows and Linux internals and binary analysis, in Rust, C++, C and Python">
 </p>
 
 ## About
 
-Independent researcher working on Windows systems programming and binary analysis. I write small, focused tools that make the layer between source code and the running process visible: object layout, calling conventions, how linkers assemble a binary, how loaders map it, and how debuggers see it.
+I'm an independent researcher working on systems programming and binary analysis across **Windows and Linux**. Most of what I build is small, focused tooling that makes the layer between source code and the running process visible: how compilers lay out objects and emit metadata, how linkers assemble a binary, how loaders map it into memory, and how debuggers and unwinders read it back.
 
-- **Windows x64 internals:** PE/COFF layout, MSVC RTTI, class recovery, vtable walking
-- **Low-level tooling:** binary inspection and runtime observation, mostly in C++ and Rust
-- **Lab-first:** everything is built and tested on my own machines, against my own target binaries and harnesses
+I'm most interested in the metadata a compiler *has* to leave in a binary, such as RTTI, vtables, unwind tables and import tables. It survives stripping, and it often reveals more about a program's structure than the symbol table did.
+
+<p align="center">
+  <img src="assets/anatomy.svg" width="100%" alt="The section layout of a Windows PE file and a Linux ELF file, with animated lines from each structure to the tool that reads it: pe-walker and pe-diff read the headers, section table and imports; rtti-dump and vtable-dump read RTTI and vtables in .rdata; pattern-scan scans .text on both; unwind-map reads the program headers, .eh_frame_hdr and .eh_frame">
+</p>
+
+### What I work on
+
+- **Windows x64 internals:** PE/COFF layout, the MSVC C++ ABI, RTTI and class hierarchy recovery, vtable layout, import and export directories
+- **Linux internals:** ELF, the System V AMD64 ABI, DWARF call frame information and `.eh_frame`, program headers and the dynamic loader, `/proc`
+- **Reverse engineering tooling:** static analysis that recovers structure from stripped binaries, plus small utilities that fit into Ghidra, GDB, x64dbg and WinDbg workflows
+- **Languages:** C++ for Windows tooling, Rust for cross-platform command-line tools, C for the lowest layers, and Python for analysis scripts and test harnesses
+
+### How I work
+
+- **Lab-first:** everything is built and tested on my own machines, against my own target binaries
+- **Verified, not eyeballed:** tools are tested against real binaries and, where possible, checked against an independent decoder
+- **Small and auditable:** focused codebases with zero third-party dependencies
+- **Documented internals:** every README explains the format being parsed, not just the flags
 
 ## Toolbox
 
@@ -23,24 +39,47 @@ Independent researcher working on Windows systems programming and binary analysi
     </td>
   </tr>
   <tr>
+    <td><b>Platforms</b></td>
+    <td>
+      <img src="https://img.shields.io/badge/Windows-161b22?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iIzAwYTRlZiIgZD0iTTAgMGgxMS40djExLjRIMHpNMTIuNiAwSDI0djExLjRIMTIuNnpNMCAxMi42aDExLjRWMjRIMHpNMTIuNiAxMi42SDI0VjI0SDEyLjZ6Ii8%2BPC9zdmc%2B" alt="Windows">
+      <img src="https://img.shields.io/badge/Linux-161b22?style=for-the-badge&logo=linux&logoColor=fcc624" alt="Linux">
+    </td>
+  </tr>
+  <tr>
     <td><b>Build</b></td>
-    <td>CMake &nbsp;·&nbsp; Cargo &nbsp;·&nbsp; MSVC &nbsp;·&nbsp; MinGW-w64</td>
+    <td>CMake &nbsp;·&nbsp; Cargo &nbsp;·&nbsp; MSVC &nbsp;·&nbsp; MinGW-w64 &nbsp;·&nbsp; GCC &nbsp;·&nbsp; Clang / LLD</td>
   </tr>
   <tr>
     <td><b>Analysis</b></td>
-    <td>Ghidra &nbsp;·&nbsp; x64dbg &nbsp;·&nbsp; WinDbg</td>
+    <td>Ghidra &nbsp;·&nbsp; x64dbg &nbsp;·&nbsp; WinDbg &nbsp;·&nbsp; GDB &nbsp;·&nbsp; readelf / objdump</td>
   </tr>
   <tr>
-    <td><b>Topics</b></td>
-    <td>PE/COFF &nbsp;·&nbsp; MSVC ABI &amp; RTTI &nbsp;·&nbsp; x64 calling conventions &nbsp;·&nbsp; linkers &amp; loaders</td>
+    <td><b>Formats &amp; ABIs</b></td>
+    <td>PE/COFF &nbsp;·&nbsp; ELF &nbsp;·&nbsp; DWARF CFI &nbsp;·&nbsp; MSVC C++ ABI &nbsp;·&nbsp; System V AMD64 &nbsp;·&nbsp; Microsoft x64 calling convention</td>
   </tr>
 </table>
 
 ## Projects
 
-A small toolkit for taking x64 Windows binaries apart. `pe-walker` and `pe-diff` cover the file format, `rtti-dump` and `vtable-dump` recover C++ class structure from MSVC builds, and `pattern-scan` is a drop-in library for signature scanning. Every project is C++17, builds with CMake, is MIT-licensed and has zero third-party dependencies.
+Two small toolkits for taking binaries apart, one for each platform. The Windows tools are C++17 built with CMake, and the Linux tooling is Rust. Everything is MIT-licensed and has zero third-party dependencies.
 
 <table>
+  <tr>
+    <td colspan="2" valign="top">
+
+### [unwind-map](https://github.com/td185721/unwind-map)
+
+Recovers function boundaries from **stripped** Linux ELF binaries by decoding the `.eh_frame` unwind tables that `strip` can't remove. It still works when the section headers are gone, flags functions with exception handling, finds code that has no unwind info, puts symbols back with `objcopy`, exports to Ghidra and JSON, and draws the whole binary as a Hilbert-curve map. Checked against `llvm-readobj`'s independent decoder, it produced zero false starts and recovered every function with unwind info on x86-64, x86 and AArch64.
+
+<p align="center">
+  <img src="assets/unwind-map-demo.svg" width="61%" alt="Terminal demo: unwind-map recovers 578 functions from a stripped binary and objcopy puts the symbols back">
+  <img src="assets/unwind-map-map.svg" width="36%" alt="Hilbert-curve map of the same stripped binary: every recovered function as a colored trace">
+</p>
+
+<sub><code>Linux</code> &nbsp;<code>Rust</code> &nbsp;<code>ELF</code> &nbsp;<code>DWARF CFI</code> &nbsp;<code>x86-64 · x86 · AArch64</code> &nbsp;<code>CI-tested</code></sub>
+
+</td>
+  </tr>
   <tr>
     <td width="50%" valign="top">
 
@@ -52,7 +91,7 @@ Command-line inspector for the Portable Executable format: DOS and NT headers, s
 pe-walker --summary app.exe
 ```
 
-<sub><code>PE/COFF</code> &nbsp;<code>CLI</code> &nbsp;<code>x86 / x64</code></sub>
+<sub><code>Windows</code> &nbsp;<code>C++17</code> &nbsp;<code>PE/COFF</code> &nbsp;<code>x86 / x64</code></sub>
 
 </td>
     <td width="50%" valign="top">
@@ -65,7 +104,7 @@ Structural diff for two PE files. Compares headers, sections, imports and export
 pe-diff -T old.dll new.dll
 ```
 
-<sub><code>PE/COFF</code> &nbsp;<code>CLI</code> &nbsp;<code>patch diffing</code></sub>
+<sub><code>Windows</code> &nbsp;<code>C++17</code> &nbsp;<code>PE/COFF</code> &nbsp;<code>patch diffing</code></sub>
 
 </td>
   </tr>
@@ -80,7 +119,7 @@ Recovers class hierarchies from stripped MSVC x64 binaries by walking Complete O
 rtti-dump --demangle app.exe
 ```
 
-<sub><code>MSVC RTTI</code> &nbsp;<code>class recovery</code> &nbsp;<code>CLI</code></sub>
+<sub><code>Windows</code> &nbsp;<code>C++17</code> &nbsp;<code>MSVC RTTI</code> &nbsp;<code>class recovery</code></sub>
 
 </td>
     <td width="50%" valign="top">
@@ -93,7 +132,7 @@ Companion to rtti-dump. Finds each class's vtable through its Complete Object Lo
 vtable-dump -f exception app.exe
 ```
 
-<sub><code>MSVC ABI</code> &nbsp;<code>vtables</code> &nbsp;<code>CLI</code></sub>
+<sub><code>Windows</code> &nbsp;<code>C++17</code> &nbsp;<code>MSVC ABI</code> &nbsp;<code>vtables</code></sub>
 
 </td>
   </tr>
@@ -102,14 +141,14 @@ vtable-dump -f exception app.exe
 
 ### [pattern-scan](https://github.com/td185721/pattern-scan)
 
-Single-header C++17 library for IDA-style byte signature scanning. Parse a pattern once, then find the first or every match in a byte range. No allocations beyond the parsed signature and no OS-specific code.
+Single-header C++17 library for IDA-style byte signature scanning. Parse a pattern once, then find the first or every match in a byte range. It allocates nothing beyond the parsed signature and contains no OS-specific code.
 
 ```cpp
 const auto sig = patscan::parse("48 8B ?? E8 ?? ?? ?? ?? 85 C0");
 const auto* hit = patscan::find(data, size, sig);
 ```
 
-<sub><code>header-only</code> &nbsp;<code>signature scanning</code> &nbsp;<code>library</code></sub>
+<sub><code>cross-platform</code> &nbsp;<code>C++17</code> &nbsp;<code>header-only</code> &nbsp;<code>signature scanning</code></sub>
 
 </td>
   </tr>
